@@ -52,8 +52,6 @@ class ElasticManager(MyLogger):
         self.ES = Elasticsearch()
         self.indices = list(self.ES.indices.get_alias())
 
-        self.choose_option()
-
     def choose_option(self):
         print("--- Elastic manager ---\n Please select option:")
         option_list = ["LIST ALL INDECIES",
@@ -85,7 +83,7 @@ class ElasticManager(MyLogger):
             self.select_index()
             self.upload_data()
         elif(choice == 6):
-            #self.select_index()
+            # self.select_index()
             self.restore_data()
         elif(choice == 7):
             self.create_index()
@@ -124,20 +122,20 @@ class ElasticManager(MyLogger):
         self.logger.debug(json.dumps(body, indent=4))
         self.logger.debug("File location modified")
 
-        answer = input("Do you want to create new repository?(y/n): ")
+        #answer = input("Do you want to create new repository?(y/n): ")
         # Option for creating new repository
-        if answer == "y":
-            self.repository = input("Name your respository: ")
-            self.ES.snapshot.create_repository(
-                repository=self.repository, body=body)
-            self.logger.info("Repository name".format())
+        #if answer == "y":
+        self.repository = body["settings"]["location"]
+        self.ES.snapshot.create_repository(
+            repository=self.repository, body=body)
+        self.logger.info("Repository name".format())
 
-        else:
+        '''else:
 
             self.choose_repository()
             self.ES.snapshot.create_repository(
                 repository=self.repository, body=body)
-            self.logger.info("Repository name".format(self.repository))
+            self.logger.info("Repository name".format(self.repository))'''
 
         # Creating snapshot
         with open("snapshot_mainbody.json", "r") as file:
@@ -211,15 +209,15 @@ class ElasticManager(MyLogger):
     def restore_data(self):
         with open("restore_data.json", 'r') as restore_json:
             read_json = json.load(restore_json)
-
             self.choose_repository()
+            print(self.ES.snapshot.get_repository())
             snapshot = self.ES.snapshot.get_repository(
             )[self.repository]["settings"]["location"]
-
             self.logger.debug(snapshot)
             self.logger.debug("Withdrawing name of index from snapshot name")
             self.logger.info("_".join(snapshot.split("_")[:-2]))
-            self.ES.snapshot.restore(repository=self.repository, snapshot=snapshot, wait_for_completion=True)
+            self.ES.snapshot.restore(
+                repository=self.repository, snapshot=snapshot, wait_for_completion=True)
 
     def choose_repository(self):
         repository_list = list(self.ES.snapshot.get_repository().keys())
@@ -237,4 +235,6 @@ class ElasticManager(MyLogger):
         self.logger.info("{} deleted".format(self.repository))
 
 
-ElasticManager()
+if __name__ == "__main__":
+    ElasticManager().choose_option()
+
